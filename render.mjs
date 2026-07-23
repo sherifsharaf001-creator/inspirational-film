@@ -51,8 +51,14 @@ await page.evaluate(() => {
     throw new Error("The 9:16 animation container could not be found.");
   }
 
+  const originalWidth = 420;
+  const originalHeight = 747;
+  const scaleX = 1080 / originalWidth;
+  const scaleY = 1920 / originalHeight;
+
   const wrapper = stage.parentElement;
   const pageShell = wrapper?.parentElement;
+  const root = document.getElementById("root");
 
   Object.assign(document.documentElement.style, {
     margin: "0",
@@ -72,7 +78,6 @@ await page.evaluate(() => {
     background: "#000"
   });
 
-  const root = document.getElementById("root");
   Object.assign(root.style, {
     margin: "0",
     padding: "0",
@@ -103,20 +108,28 @@ await page.evaluate(() => {
       width: "1080px",
       height: "1920px",
       maxWidth: "none",
-      overflow: "hidden"
+      overflow: "hidden",
+      position: "relative"
     });
   }
 
+  // Keep the original 420Ã747 design intact and scale the whole composition.
+  // This preserves the approved subtitle sizes and proportions.
   Object.assign(stage.style, {
+    position: "absolute",
+    left: "0",
+    top: "0",
     margin: "0",
     padding: "0",
-    width: "1080px",
-    height: "1920px",
+    width: `${originalWidth}px`,
+    height: `${originalHeight}px`,
     maxWidth: "none",
     aspectRatio: "auto",
     borderRadius: "0",
     boxShadow: "none",
-    overflow: "hidden"
+    overflow: "hidden",
+    transformOrigin: "top left",
+    transform: `scale(${scaleX}, ${scaleY})`
   });
 });
 
@@ -143,7 +156,7 @@ function run(command, args) {
 await run("ffmpeg", [
   "-y",
   "-i", rawPath,
-  "-vf", "fps=30,scale=1080:1920:flags=lanczos,format=yuv420p",
+  "-vf", "fps=30,format=yuv420p",
   "-c:v", "libx264",
   "-preset", "medium",
   "-crf", "18",
