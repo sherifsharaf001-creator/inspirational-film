@@ -1,0 +1,11 @@
+{
+  "name": "html-to-mp4-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}
