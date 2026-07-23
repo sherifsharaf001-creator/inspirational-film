@@ -1,4 +1,4 @@
-name: Generate MP4
+name: Generate MP4 Fast
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
 
     steps:
       - name: Check out repository
@@ -22,14 +22,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
 
-      - name: Install Chromium
+      - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
-
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Render HTML to MP4
         env:
@@ -43,3 +40,4 @@ jobs:
           path: output/inspirational-film.mp4
           if-no-files-found: error
           retention-days: 7
+          compression-level: 0
