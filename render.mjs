@@ -43,10 +43,6 @@ await page.evaluate(() => {
 });
 
 // Start from the beginning using the existing Play control.
-const playButton = page.getByRole("button", { name: "Play" });
-await playButton.waitFor({ state: "visible", timeout: 30000 });
-await playButton.click();
-
 // Record the full film.
 await page.waitForTimeout(seconds * 1000);
 
