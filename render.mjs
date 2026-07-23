@@ -1,12 +1,13 @@
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
-import { mkdir, readdir, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
 const seconds = Number(process.env.RECORD_SECONDS || "100");
 const outDir = path.resolve("output");
 const videoDir = path.resolve("raw-video");
+
 await rm(outDir, { recursive: true, force: true });
 await rm(videoDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
@@ -23,7 +24,7 @@ const browser = await chromium.launch({
 });
 
 const context = await browser.newContext({
-  viewport: { width: 420, height: 747 },
+  viewport: { width: 1080, height: 1920 },
   deviceScaleFactor: 1,
   recordVideo: {
     dir: videoDir,
@@ -32,18 +33,93 @@ const context = await browser.newContext({
 });
 
 const page = await context.newPage();
+
 await page.goto(`file://${path.resolve("index.html")}`, {
-  waitUntil: "networkidle"
+  waitUntil: "domcontentloaded"
 });
+
+await page.waitForSelector("#root", { timeout: 30000 });
 
 await page.evaluate(() => {
-  document.documentElement.style.margin = "0";
-  document.body.style.margin = "0";
-  document.body.style.overflow = "hidden";
+  const stage = Array.from(document.querySelectorAll("div")).find(
+    element =>
+      typeof element.className === "string" &&
+      element.className.includes("aspect-[9/16]")
+  );
+
+  if (!stage) {
+    throw new Error("The 9:16 animation container could not be found.");
+  }
+
+  const wrapper = stage.parentElement;
+  const pageShell = wrapper?.parentElement;
+
+  Object.assign(document.documentElement.style, {
+    margin: "0",
+    padding: "0",
+    width: "1080px",
+    height: "1920px",
+    overflow: "hidden",
+    background: "#000"
+  });
+
+  Object.assign(document.body.style, {
+    margin: "0",
+    padding: "0",
+    width: "1080px",
+    height: "1920px",
+    overflow: "hidden",
+    background: "#000"
+  });
+
+  const root = document.getElementById("root");
+  Object.assign(root.style, {
+    margin: "0",
+    padding: "0",
+    width: "1080px",
+    height: "1920px",
+    overflow: "hidden",
+    background: "#000"
+  });
+
+  if (pageShell) {
+    Object.assign(pageShell.style, {
+      margin: "0",
+      padding: "0",
+      width: "1080px",
+      height: "1920px",
+      minHeight: "0",
+      maxWidth: "none",
+      display: "block",
+      overflow: "hidden",
+      background: "#000"
+    });
+  }
+
+  if (wrapper) {
+    Object.assign(wrapper.style, {
+      margin: "0",
+      padding: "0",
+      width: "1080px",
+      height: "1920px",
+      maxWidth: "none",
+      overflow: "hidden"
+    });
+  }
+
+  Object.assign(stage.style, {
+    margin: "0",
+    padding: "0",
+    width: "1080px",
+    height: "1920px",
+    maxWidth: "none",
+    aspectRatio: "auto",
+    borderRadius: "0",
+    boxShadow: "none",
+    overflow: "hidden"
+  });
 });
 
-// Start from the beginning using the existing Play control.
-// Record the full film.
 await page.waitForTimeout(seconds * 1000);
 
 const video = page.video();
@@ -67,7 +143,7 @@ function run(command, args) {
 await run("ffmpeg", [
   "-y",
   "-i", rawPath,
-  "-vf", "fps=30,format=yuv420p",
+  "-vf", "fps=30,scale=1080:1920:flags=lanczos,format=yuv420p",
   "-c:v", "libx264",
   "-preset", "medium",
   "-crf", "18",
