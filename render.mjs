@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import ffmpegPath from "ffmpeg-static";
 
 const seconds = Number(process.env.RECORD_SECONDS || "100");
 const outDir = path.resolve("output");
@@ -113,8 +114,6 @@ await page.evaluate(() => {
     });
   }
 
-  // Keep the original 420Ã747 design intact and scale the whole composition.
-  // This preserves the approved subtitle sizes and proportions.
   Object.assign(stage.style, {
     position: "absolute",
     left: "0",
@@ -145,15 +144,24 @@ const mp4Path = path.join(outDir, "inspirational-film.mp4");
 function run(command, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: "inherit" });
+
     child.on("error", reject);
+
     child.on("close", code => {
-      if (code === 0) resolve();
-      else reject(new Error(`${command} exited with code ${code}`));
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`${command} exited with code ${code}`));
+      }
     });
   });
 }
 
-await run("ffmpeg", [
+if (!ffmpegPath) {
+  throw new Error("ffmpeg-static binary was not found.");
+}
+
+await run(ffmpegPath, [
   "-y",
   "-i", rawPath,
   "-vf", "fps=30,format=yuv420p",
